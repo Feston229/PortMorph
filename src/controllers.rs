@@ -31,16 +31,18 @@ async fn process_conn(mut incoming: TcpStream) -> Result<()> {
         let request = String::from_utf8_lossy(&buf);
         if request.starts_with("SSH-") {
             tracing::info!("Redirect to ssh");
-            redirect(incoming, "127.0.0.1:40000").await?;
+            redirect(incoming, "127.0.0.1:40000", buf).await?;
         }
     }
     Ok(())
 }
 
-async fn redirect(mut incoming: TcpStream, addr: &str) -> Result<()> {
+async fn redirect(mut incoming: TcpStream, addr: &str, buf: Vec<u8>) -> Result<()> {
     if let Ok(mut outcoming) = TcpStream::connect(addr).await {
         let (mut incoming_read, mut incoming_write) = incoming.split();
         let (mut outcoming_read, mut outcoming_write) = outcoming.split();
+
+        outcoming_write.write_all(&buf).await?;
 
         let incoming_fut = io::copy(&mut incoming_read, &mut outcoming_write);
         let outcoming_fut = io::copy(&mut outcoming_read, &mut incoming_write);
