@@ -1,6 +1,6 @@
 use anyhow::Result;
 use tokio::{
-    io::{self, AsyncReadExt},
+    io::{self, AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     try_join,
 };
@@ -29,12 +29,9 @@ async fn process_conn(mut incoming: TcpStream) -> Result<()> {
 
     if let Ok(_) = incoming.read_buf(&mut buf).await {
         let request = String::from_utf8_lossy(&buf);
-        let request_lines: Vec<&str> = request.lines().collect();
-        if let Some(identity) = request_lines.get(0) {
-            if identity.starts_with("SSH-") {
-                tracing::info!("Redirect to ssh");
-                redirect(incoming, "127.0.0.1:40000").await?;
-            }
+        if request.starts_with("SSH-") {
+            tracing::info!("Redirect to ssh");
+            redirect(incoming, "127.0.0.1:40000").await?;
         }
     }
     Ok(())
