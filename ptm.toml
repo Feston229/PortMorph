@@ -1,0 +1,22 @@
+[server]
+listen = "127.0.0.1:40001"
+
+[[location]]
+name = "ssh"
+path = "/ssh"
+forward_to = "127.0.0.1:40000"
+
+[[location]]
+name = "web"
+path = "/"
+forward_to = "127.0.0.1:3000"
+
+[[location]]
+name = "cv"
+path = "/cv"
+forward_to = "127.0.0.1:3000"
+
+[[location]]
+name = "nextcloud"
+path = "/nextcloud"
+forward_to = "127.0.0.1:9000"
