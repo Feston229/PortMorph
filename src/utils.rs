@@ -40,3 +40,16 @@ pub async fn get_forward_by_path(config: &Arc<Mutex<Config>>, path: &str) -> Res
         .collect();
     Ok(addr)
 }
+
+pub async fn get_paths(config: &Arc<Mutex<Config>>) -> Result<Vec<String>> {
+    let paths: Vec<String> = config
+        .lock()
+        .await
+        .location
+        .clone()
+        .into_iter()
+        .filter(|loc| loc.path != "/")
+        .map(|loc| loc.path)
+        .collect();
+    Ok(paths)
+}
