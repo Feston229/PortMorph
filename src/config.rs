@@ -19,6 +19,7 @@ pub struct Location {
     pub name: String,
     pub path: String,
     pub forward_to: String,
+    pub method: Option<String>
 }
 
 pub async fn init_config() -> Result<Config> {

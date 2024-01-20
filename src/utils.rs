@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use tokio::sync::Mutex;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -15,6 +15,7 @@ pub fn init_tracing() -> Result<()> {
     Ok(())
 }
 
+// Get to which address to forward by location name
 pub async fn get_forward_by_name(config: &Arc<Mutex<Config>>, name: &str) -> Result<String> {
     let addr: String = config
         .lock()
@@ -28,6 +29,7 @@ pub async fn get_forward_by_name(config: &Arc<Mutex<Config>>, name: &str) -> Res
     Ok(addr)
 }
 
+// Get to which address to forward by location path
 pub async fn get_forward_by_path(config: &Arc<Mutex<Config>>, path: &str) -> Result<String> {
     let addr: String = config
         .lock()
@@ -41,15 +43,28 @@ pub async fn get_forward_by_path(config: &Arc<Mutex<Config>>, path: &str) -> Res
     Ok(addr)
 }
 
-pub async fn get_paths(config: &Arc<Mutex<Config>>) -> Result<Vec<String>> {
+// Find path related to request
+pub async fn find_path(
+    config: &Arc<Mutex<Config>>,
+    request_path: &str,
+    method: &str,
+) -> Result<String> {
     let paths: Vec<String> = config
         .lock()
         .await
         .location
         .clone()
         .into_iter()
-        .filter(|loc| loc.path != "/")
+        .filter(|loc| {
+            loc.path != "/" && loc.method == Some(method.to_owned()) || loc.method == None
+        })
         .map(|loc| loc.path)
         .collect();
-    Ok(paths)
+    if let Some(matching_path) = paths
+        .into_iter()
+        .find(|path| request_path.starts_with(&*path))
+    {
+        return Ok(matching_path);
+    }
+    return Err(anyhow!("Missing route"));
 }

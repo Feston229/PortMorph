@@ -1,5 +1,5 @@
 [server]
-listen = "127.0.0.1:40001"
+listen = "0.0.0.0:9999"
 
 [[location]]
 name = "ssh"
@@ -12,11 +12,6 @@ path = "/"
 forward_to = "127.0.0.1:3000"
 
 [[location]]
-name = "cv"
-path = "/cv"
-forward_to = "127.0.0.1:3000"
-
-[[location]]
-name = "nextcloud"
-path = "/nextcloud"
-forward_to = "127.0.0.1:9000"
+name = "test"
+path = "/test"
+forward_to = "127.0.0.1:5000"
