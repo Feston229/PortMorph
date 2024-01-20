@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use tokio::{
     io::{self, AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, TcpStream},
+    net::{tcp, TcpListener, TcpStream},
     sync::Mutex,
     try_join,
 };
@@ -16,7 +16,29 @@ use crate::{
 pub async fn run() -> Result<()> {
     init_tracing()?;
     let config = Arc::new(Mutex::new(init_config().await?));
+    let ssl_enabled = config
+        .lock()
+        .await
+        .server
+        .ssl
+        .is_some_and(|ssl| ssl == true)
+        .clone();
 
+    if ssl_enabled {
+        tls_listener(config).await?;
+    } else {
+        tcp_listener(config).await?;
+    }
+
+    Ok(())
+}
+
+// TODO
+async fn tls_listener(config: Arc<Mutex<Config>>) -> Result<()> {
+    Ok(())
+}
+
+async fn tcp_listener(config: Arc<Mutex<Config>>) -> Result<()> {
     let listener = TcpListener::bind(&config.lock().await.server.listen).await?;
     tracing::info!("Listening on {}", listener.local_addr()?);
 

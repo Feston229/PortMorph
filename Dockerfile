@@ -11,4 +11,5 @@ EXPOSE 9999
 
 STOPSIGNAL SIGQUIT
 
+# CMD ["./port_morph"]
 CMD ["./target/x86_64-unknown-linux-musl/debug/port_morph"]
