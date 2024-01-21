@@ -2,11 +2,12 @@ use std::{fs::File, io::BufReader, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use tokio::{
-    io::{self, AsyncReadExt, AsyncWriteExt},
+    io::{self, split, AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     sync::Mutex,
     try_join,
 };
+use tokio_rustls::server::TlsStream;
 use tokio_rustls::TlsAcceptor;
 
 use crate::{
@@ -52,13 +53,57 @@ async fn tls_listener(config: Arc<Mutex<Config>>) -> Result<()> {
     let listener = TcpListener::bind(&config_lock.server.listen).await?;
     tracing::info!("Listening on {} (tls)", listener.local_addr()?);
 
+    drop(config_lock);
     while let Ok((incoming, _)) = listener.accept().await {
-        let mut buf: Vec<u8> = vec![];
-        let mut incoming = acceptor.accept(incoming).await?;
-        incoming.read_buf(&mut buf).await?;
-        let request = String::from_utf8_lossy(&buf);
-        tracing::debug!("Got request -> {} (tls)", request);
+        let incoming = acceptor.accept(incoming).await?;
+        let config_clone = Arc::clone(&config);
+        tokio::spawn(async move {
+            if let Err(e) = process_tls(incoming, config_clone).await {
+                tracing::error!("{e}");
+            }
+        });
     }
+
+    Ok(())
+}
+
+async fn process_tls(mut incoming: TlsStream<TcpStream>, config: Arc<Mutex<Config>>) -> Result<()> {
+    let mut buf: Vec<u8> = vec![];
+    let addr: String;
+    incoming.read_buf(&mut buf).await?;
+    let mut request = String::from_utf8_lossy(&buf);
+    tracing::debug!("Got request -> {} (tls)", request);
+
+    if request.starts_with("GET") || request.starts_with("POST") {
+        let method = request
+            .split_whitespace()
+            .nth(0)
+            .ok_or(anyhow!("Unknown method"))?;
+        let request_path = request
+            .split_whitespace()
+            .nth(1)
+            .ok_or(anyhow!("Missing path"))?;
+
+        let path = find_path(&config, request_path, method).await?;
+        if path != "/" {
+            addr = get_forward_by_path(&config, &path).await?;
+            request = request.replace(&format!(" {path}"), " ").into();
+            buf = request.as_bytes().to_vec();
+        } else {
+            addr = get_forward_by_name(&config, "web").await?;
+        }
+    } else {
+        return Err(anyhow!("Unknown request"));
+    }
+
+    // Redirect
+    let mut oncoming = TcpStream::connect(addr).await?;
+    let (mut incoming_read, mut incoming_write) = split(incoming);
+    oncoming.write_all(&buf).await?;
+    let (mut oncoming_read, mut oncoming_write) = oncoming.split();
+    let incoming_fut = io::copy(&mut incoming_read, &mut oncoming_write);
+    let oncoming_fut = io::copy(&mut oncoming_read, &mut incoming_write);
+    try_join!(incoming_fut, oncoming_fut)?;
 
     Ok(())
 }
@@ -70,7 +115,7 @@ async fn tcp_listener(config: Arc<Mutex<Config>>) -> Result<()> {
     while let Ok((incoming, _)) = listener.accept().await {
         let config_clone = Arc::clone(&config);
         tokio::spawn(async move {
-            if let Err(e) = process_conn(incoming, config_clone).await {
+            if let Err(e) = process_tcp(incoming, config_clone).await {
                 tracing::error!("{e}");
             }
         });
@@ -79,7 +124,7 @@ async fn tcp_listener(config: Arc<Mutex<Config>>) -> Result<()> {
     Ok(())
 }
 
-async fn process_conn(mut incoming: TcpStream, config: Arc<Mutex<Config>>) -> Result<()> {
+async fn process_tcp(mut incoming: TcpStream, config: Arc<Mutex<Config>>) -> Result<()> {
     let mut buf: Vec<u8> = vec![];
     let addr: String;
     incoming.read_buf(&mut buf).await?;
@@ -99,10 +144,15 @@ async fn process_conn(mut incoming: TcpStream, config: Arc<Mutex<Config>>) -> Re
             .split_whitespace()
             .nth(1)
             .ok_or(anyhow!("Missing path"))?;
+
         let path = find_path(&config, request_path, method).await?;
-        addr = get_forward_by_path(&config, &path).await?;
-        request = request.replace(&format!(" {path}"), " ").into();
-        buf = request.as_bytes().to_vec();
+        if path != "/" {
+            addr = get_forward_by_path(&config, &path).await?;
+            request = request.replace(&format!(" {path}"), " ").into();
+            buf = request.as_bytes().to_vec();
+        } else {
+            addr = get_forward_by_name(&config, "web").await?;
+        }
     } else {
         return Err(anyhow!("Unknown request"));
     }
