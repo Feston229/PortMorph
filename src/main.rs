@@ -1,6 +1,5 @@
 mod config;
 mod controllers;
-mod ssl;
 mod utils;
 
 use controllers::run;

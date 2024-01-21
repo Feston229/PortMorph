@@ -68,3 +68,13 @@ pub async fn find_path(
     }
     return Err(anyhow!("Missing route"));
 }
+
+pub async fn is_ssl_enabled(config: &Arc<Mutex<Config>>) -> bool {
+    config
+        .lock()
+        .await
+        .server
+        .ssl
+        .is_some_and(|ssl| ssl == true)
+        .clone()
+}

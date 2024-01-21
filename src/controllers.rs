@@ -1,30 +1,24 @@
-use std::sync::Arc;
+use std::{fs::File, io::BufReader, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use tokio::{
     io::{self, AsyncReadExt, AsyncWriteExt},
-    net::{tcp, TcpListener, TcpStream},
+    net::{TcpListener, TcpStream},
     sync::Mutex,
     try_join,
 };
+use tokio_rustls::TlsAcceptor;
 
 use crate::{
     config::{init_config, Config},
-    utils::{find_path, get_forward_by_name, get_forward_by_path, init_tracing},
+    utils::{find_path, get_forward_by_name, get_forward_by_path, init_tracing, is_ssl_enabled},
 };
 
 pub async fn run() -> Result<()> {
     init_tracing()?;
     let config = Arc::new(Mutex::new(init_config().await?));
-    let ssl_enabled = config
-        .lock()
-        .await
-        .server
-        .ssl
-        .is_some_and(|ssl| ssl == true)
-        .clone();
 
-    if ssl_enabled {
+    if is_ssl_enabled(&config).await {
         tls_listener(config).await?;
     } else {
         tcp_listener(config).await?;
@@ -33,8 +27,39 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 
-// TODO
 async fn tls_listener(config: Arc<Mutex<Config>>) -> Result<()> {
+    let config_lock = config.lock().await;
+    let cert_path = config_lock
+        .server
+        .cert_path
+        .as_ref()
+        .ok_or(anyhow!("Missing cert_path"))?;
+    let key_path = config_lock
+        .server
+        .key_path
+        .as_ref()
+        .ok_or(anyhow!("Missing key_path"))?;
+
+    let certs = rustls_pemfile::certs(&mut BufReader::new(&mut File::open(cert_path)?))
+        .collect::<Result<Vec<_>, _>>()?;
+    let private_key = rustls_pemfile::private_key(&mut BufReader::new(&mut File::open(key_path)?))?
+        .ok_or(anyhow!("Incorrect key"))?;
+    let server_config = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, private_key)?;
+
+    let acceptor = TlsAcceptor::from(Arc::new(server_config));
+    let listener = TcpListener::bind(&config_lock.server.listen).await?;
+    tracing::info!("Listening on {} (tls)", listener.local_addr()?);
+
+    while let Ok((incoming, _)) = listener.accept().await {
+        let mut buf: Vec<u8> = vec![];
+        let mut incoming = acceptor.accept(incoming).await?;
+        incoming.read_buf(&mut buf).await?;
+        let request = String::from_utf8_lossy(&buf);
+        tracing::debug!("Got request -> {} (tls)", request);
+    }
+
     Ok(())
 }
 
