@@ -1,8 +1,8 @@
 [server]
 listen = "127.0.0.1:9999"
-ssl = true
-cert_path = "cert.pem"
-key_path = "key.pem"
+# ssl = true
+# cert_path = "cert.pem"
+# key_path = "key.pem"
 
 [[location]]
 name = "ssh"
@@ -12,7 +12,7 @@ forward_to = "127.0.0.1:40000"
 [[location]]
 name = "web"
 path = "/"
-forward_to = "127.0.0.1:3000"
+forward_to = "127.0.0.1:7722"
 
 [[location]]
 name = "test"

@@ -78,3 +78,8 @@ pub async fn is_ssl_enabled(config: &Arc<Mutex<Config>>) -> bool {
         .is_some_and(|ssl| ssl == true)
         .clone()
 }
+
+// TODO
+pub async fn redirect_to_502() -> Result<()> {
+    Ok(())
+}
