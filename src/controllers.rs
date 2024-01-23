@@ -1,11 +1,11 @@
 use anyhow::{anyhow, Result};
 use std::{fs::File, io::BufReader, sync::Arc};
 use tokio::{
-    io::{copy_bidirectional, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
+    io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt},
     net::{TcpListener, TcpStream},
     sync::Mutex,
 };
-use tokio_rustls::{server::TlsStream, TlsAcceptor};
+use tokio_rustls::TlsAcceptor;
 
 use crate::{
     config::{init_config, Config},
@@ -52,10 +52,10 @@ async fn tls_listener(config: Arc<Mutex<Config>>) -> Result<()> {
 
     drop(config_lock);
     while let Ok((incoming, _)) = listener.accept().await {
-        let incoming = acceptor.accept(incoming).await?;
+        let acceptor_clone = acceptor.clone();
         let config_clone = Arc::clone(&config);
         tokio::spawn(async move {
-            if let Err(e) = process_tls(incoming, config_clone).await {
+            if let Err(e) = process_tls(acceptor_clone, incoming, config_clone).await {
                 tracing::error!("{e}");
             }
         });
@@ -64,7 +64,12 @@ async fn tls_listener(config: Arc<Mutex<Config>>) -> Result<()> {
     Ok(())
 }
 
-async fn process_tls(mut incoming: TlsStream<TcpStream>, config: Arc<Mutex<Config>>) -> Result<()> {
+async fn process_tls(
+    acceptor: TlsAcceptor,
+    incoming: TcpStream,
+    config: Arc<Mutex<Config>>,
+) -> Result<()> {
+    let mut incoming = acceptor.accept(incoming).await?;
     let mut buf: Vec<u8> = vec![];
     let addr: String;
     incoming.read_buf(&mut buf).await?;
@@ -157,12 +162,12 @@ where
         Ok(mut oncoming) => {
             oncoming.write_all(&buf).await?;
             let (client_bytes, server_bytes) =
-                copy_bidirectional(&mut incoming, &mut oncoming).await?;
+                io::copy_bidirectional(&mut incoming, &mut oncoming).await?;
             tracing::debug!(
                 "client sent {client_bytes} bytes and server sent {server_bytes} bytes"
             );
         }
-        // Return Bad Gateway
+        // Return Bad Gateway (TODO)
         Err(_) => {
             incoming.write_all(b"Bad Gateway").await?;
         }

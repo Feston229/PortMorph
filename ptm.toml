@@ -1,8 +1,8 @@
 [server]
 listen = "127.0.0.1:9999"
-# ssl = true
-# cert_path = "cert.pem"
-# key_path = "key.pem"
+ssl = true
+cert_path = "cert.pem"
+key_path = "key.pem"
 
 [[location]]
 name = "ssh"
@@ -15,6 +15,6 @@ path = "/"
 forward_to = "127.0.0.1:7722"
 
 [[location]]
-name = "test"
-path = "/test"
-forward_to = "127.0.0.1:5000"
+name = "graphql"
+path = "/graphql"
+forward_to = "127.0.0.1:8080/graphql"
