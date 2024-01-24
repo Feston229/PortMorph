@@ -36,22 +36,20 @@ pub async fn init_config() -> Result<Config> {
     let config: Config = from_str(&toml_content)?;
 
     // Validate config
-    if let Some(ssl) = config.server.ssl {
-        if ssl {
-            if let Some(cert_path) = &config.server.cert_path {
-                if !PathBuf::from(cert_path).exists() {
-                    return Err(anyhow!(format!("{cert_path} file not found")));
-                }
-            } else {
-                return Err(anyhow!("cert_path is missing in configuration"));
+    if config.server.ssl.is_some_and(|ssl| ssl == true) {
+        if let Some(cert_path) = &config.server.cert_path {
+            if !PathBuf::from(cert_path).exists() {
+                return Err(anyhow!(format!("{cert_path} file not found")));
             }
-            if let Some(key_path) = &config.server.key_path {
-                if !PathBuf::from(key_path).exists() {
-                    return Err(anyhow!(format!("{key_path} file not found")));
-                }
-            } else {
-                return Err(anyhow!("key_path is missing in configuration"));
+        } else {
+            return Err(anyhow!("cert_path is missing in configuration"));
+        }
+        if let Some(key_path) = &config.server.key_path {
+            if !PathBuf::from(key_path).exists() {
+                return Err(anyhow!(format!("{key_path} file not found")));
             }
+        } else {
+            return Err(anyhow!("key_path is missing in configuration"));
         }
     }
 
