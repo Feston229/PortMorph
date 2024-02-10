@@ -1,11 +1,8 @@
-use std::sync::Arc;
-
+use crate::config::Config;
 use anyhow::{anyhow, Result};
-use tokio::sync::Mutex;
+use std::sync::Arc;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
-
-use crate::config::Config;
 
 pub fn init_tracing() -> Result<()> {
     let subscriber = FmtSubscriber::builder()
@@ -16,10 +13,8 @@ pub fn init_tracing() -> Result<()> {
 }
 
 // Get to which address to forward by location name
-pub async fn get_forward_by_name(config: &Arc<Mutex<Config>>, name: &str) -> Result<String> {
+pub async fn get_forward_by_name(config: &Arc<Config>, name: &str) -> Result<String> {
     let addr: String = config
-        .lock()
-        .await
         .location
         .clone()
         .into_iter()
@@ -30,10 +25,8 @@ pub async fn get_forward_by_name(config: &Arc<Mutex<Config>>, name: &str) -> Res
 }
 
 // Get to which address to forward by location path
-pub async fn get_forward_by_path(config: &Arc<Mutex<Config>>, path: &str) -> Result<String> {
+pub async fn get_forward_by_path(config: &Arc<Config>, path: &str) -> Result<String> {
     let addr: String = config
-        .lock()
-        .await
         .location
         .clone()
         .into_iter()
@@ -44,14 +37,8 @@ pub async fn get_forward_by_path(config: &Arc<Mutex<Config>>, path: &str) -> Res
 }
 
 // Find path related to request
-pub async fn find_path(
-    config: &Arc<Mutex<Config>>,
-    request_path: &str,
-    method: &str,
-) -> Result<String> {
+pub async fn find_path(config: &Arc<Config>, request_path: &str, method: &str) -> Result<String> {
     let paths: Vec<String> = config
-        .lock()
-        .await
         .location
         .clone()
         .into_iter()
@@ -67,19 +54,4 @@ pub async fn find_path(
         return Ok(matching_path);
     }
     return Err(anyhow!("Missing route"));
-}
-
-pub async fn is_ssl_enabled(config: &Arc<Mutex<Config>>) -> bool {
-    config
-        .lock()
-        .await
-        .server
-        .ssl
-        .is_some_and(|ssl| ssl == true)
-        .clone()
-}
-
-// TODO
-pub async fn redirect_to_502() -> Result<()> {
-    Ok(())
 }
