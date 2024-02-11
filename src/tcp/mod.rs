@@ -7,9 +7,9 @@ use tokio::{
     net::TcpStream,
 };
 
-pub async fn tunnel<S>(mut incoming: &mut S, addr: String, buf: &Vec<u8>) -> Result<()>
+pub async fn tunnel<S>(mut incoming: S, addr: String, buf: &Vec<u8>) -> Result<()>
 where
-    S: AsyncRead + AsyncWrite + Unpin + ?Sized,
+    S: AsyncRead + AsyncWrite + Unpin + Sized,
 {
     match TcpStream::connect(addr).await {
         // Redirect

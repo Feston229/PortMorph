@@ -65,11 +65,11 @@ impl PtmListener {
         tracing::info!("Listening on {} (tls)", listener.local_addr()?);
 
         while let Ok((incoming, _)) = listener.accept().await {
-            if let Ok(mut incoming) = acceptor.accept(incoming).await {
+            if let Ok(incoming) = acceptor.accept(incoming).await {
                 let config_clone = self.config.clone();
 
                 tokio::spawn(async move {
-                    if let Err(e) = process_tcp(&mut incoming, config_clone).await {
+                    if let Err(e) = process_tcp(incoming, config_clone).await {
                         tracing::error!("{e}");
                     }
                 });
@@ -83,11 +83,11 @@ impl PtmListener {
         let listener = TcpListener::bind(&self.listen).await?;
         tracing::info!("Listening on {}", listener.local_addr()?);
 
-        while let Ok((mut incoming, _)) = listener.accept().await {
+        while let Ok((incoming, _)) = listener.accept().await {
             let config_clone = self.config.clone();
 
             tokio::spawn(async move {
-                if let Err(e) = process_tcp(&mut incoming, config_clone).await {
+                if let Err(e) = process_tcp(incoming, config_clone).await {
                     tracing::error!("{e}");
                 }
             });
