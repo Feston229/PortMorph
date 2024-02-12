@@ -1,5 +1,7 @@
 mod config;
 mod tcp;
+#[cfg(feature = "tests")]
+mod test;
 mod utils;
 
 use crate::{config::load_config, tcp::listener::PtmListener, utils::init_tracing};
@@ -12,7 +14,7 @@ async fn main() {
 
 pub async fn run() -> Result<()> {
     init_tracing()?;
-    let config = load_config().await?;
+    let config = load_config("ptm.toml").await?;
 
     let listener = PtmListener::new(config);
     listener.start().await

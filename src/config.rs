@@ -84,9 +84,9 @@ impl From<Config> for ConfigInner {
     }
 }
 
-pub async fn load_config() -> Result<ConfigInner> {
+pub async fn load_config(filename: &str) -> Result<ConfigInner> {
     let mut toml_content = String::new();
-    if let Ok(mut file) = File::open("ptm.toml").await {
+    if let Ok(mut file) = File::open(filename).await {
         file.read_to_string(&mut toml_content).await.ok();
     }
 
