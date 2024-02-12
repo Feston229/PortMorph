@@ -2,7 +2,7 @@ mod config;
 mod tcp;
 mod utils;
 
-use crate::{config::init_config, tcp::listener::PtmListener, utils::init_tracing};
+use crate::{config::load_config, tcp::listener::PtmListener, utils::init_tracing};
 use anyhow::Result;
 
 #[tokio::main]
@@ -12,8 +12,8 @@ async fn main() {
 
 pub async fn run() -> Result<()> {
     init_tracing()?;
-    let config = init_config().await?;
+    let config = load_config().await?;
 
-    let listener = PtmListener::from_config(config)?;
+    let listener = PtmListener::new(config);
     listener.start().await
 }

@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::ConfigInner;
 use anyhow::{anyhow, Result};
 use std::sync::Arc;
 use tracing::Level;
@@ -13,7 +13,7 @@ pub fn init_tracing() -> Result<()> {
 }
 
 // Get to which address to forward by location name
-pub async fn get_forward_by_name(config: &Arc<Config>, name: &str) -> Result<String> {
+pub async fn get_forward_by_name(config: &Arc<ConfigInner>, name: &str) -> Result<String> {
     let addr: String = config
         .location
         .clone()
@@ -25,7 +25,7 @@ pub async fn get_forward_by_name(config: &Arc<Config>, name: &str) -> Result<Str
 }
 
 // Get to which address to forward by location path
-pub async fn get_forward_by_path(config: &Arc<Config>, path: &str) -> Result<String> {
+pub async fn get_forward_by_path(config: &Arc<ConfigInner>, path: &str) -> Result<String> {
     let addr: String = config
         .location
         .clone()
@@ -37,7 +37,11 @@ pub async fn get_forward_by_path(config: &Arc<Config>, path: &str) -> Result<Str
 }
 
 // Find path related to request
-pub async fn find_path(config: &Arc<Config>, request_path: &str, method: &str) -> Result<String> {
+pub async fn find_path(
+    config: &Arc<ConfigInner>,
+    request_path: &str,
+    method: &str,
+) -> Result<String> {
     let paths: Vec<String> = config
         .location
         .clone()
@@ -51,7 +55,8 @@ pub async fn find_path(config: &Arc<Config>, request_path: &str, method: &str) -
         .into_iter()
         .find(|path| request_path.starts_with(&*path))
     {
-        return Ok(matching_path);
+        Ok(matching_path)
+    } else {
+        Err(anyhow!("Missing route"))
     }
-    return Err(anyhow!("Missing route"));
 }
