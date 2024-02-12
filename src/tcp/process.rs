@@ -3,14 +3,14 @@ use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite};
 
 use crate::{
-    config::Config,
+    config::ConfigInner,
     tcp::tunnel,
     utils::{find_path, get_forward_by_name, get_forward_by_path},
 };
 
-pub async fn process_tcp<S>(incoming: &mut S, config: Arc<Config>) -> Result<()>
+pub async fn process_tcp<S>(mut incoming: S, config: Arc<ConfigInner>) -> Result<()>
 where
-    S: AsyncRead + AsyncWrite + Unpin + ?Sized,
+    S: AsyncRead + AsyncWrite + Unpin + Sized,
 {
     let mut buf: Vec<u8> = vec![];
     incoming.read_buf(&mut buf).await?;
@@ -29,13 +29,13 @@ where
 }
 
 async fn process_http<S>(
-    incoming: &mut S,
-    config: Arc<Config>,
+    incoming: S,
+    config: Arc<ConfigInner>,
     mut initial_request: String,
     mut buf: Vec<u8>,
 ) -> Result<()>
 where
-    S: AsyncRead + AsyncWrite + Unpin + ?Sized,
+    S: AsyncRead + AsyncWrite + Unpin + Sized,
 {
     let addr: String;
     let method = initial_request

@@ -1,0 +1,7 @@
+[server]
+listen = "127.0.0.1:9000"
+
+[[location]]
+name = "web"
+path = "/"
+forward_to = "127.0.0.1:8080"
