@@ -2,7 +2,7 @@ use crate::{config::ConfigInner, tcp::process::process_tcp};
 use anyhow::Result;
 use rustls::ServerConfig;
 use std::sync::Arc;
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 use tokio_rustls::TlsAcceptor;
 
 pub struct PtmListener {
@@ -29,9 +29,22 @@ impl PtmListener {
         tracing::info!("Listening on {} (tls)", listener.local_addr()?);
 
         while let Ok((incoming, _)) = listener.accept().await {
-            if let Ok(incoming) = acceptor.accept(incoming).await {
-                let config_clone = self.config.clone();
+            let config_clone = self.config.clone();
 
+            if tls_detected(&incoming).await? {
+                match acceptor.accept(incoming).await {
+                    Ok(incoming) => {
+                        tokio::spawn(async move {
+                            if let Err(e) = process_tcp(incoming, config_clone).await {
+                                tracing::error!("{e}");
+                            }
+                        });
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to accept tls stream: {e}");
+                    }
+                }
+            } else {
                 tokio::spawn(async move {
                     if let Err(e) = process_tcp(incoming, config_clone).await {
                         tracing::error!("{e}");
@@ -59,4 +72,14 @@ impl PtmListener {
 
         Ok(())
     }
+}
+
+async fn tls_detected(stream: &TcpStream) -> Result<bool> {
+    let mut peek_bytes = [0u8; 8];
+    stream.peek(&mut peek_bytes).await?;
+
+    if peek_bytes.starts_with(b"\x16\x03") {
+        return Ok(true);
+    }
+    Ok(false)
 }
