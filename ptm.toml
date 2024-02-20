@@ -13,8 +13,3 @@ forward_to = "127.0.0.1:40000"
 name = "web"
 path = "/"
 forward_to = "127.0.0.1:7722"
-
-[[location]]
-name = "graphql"
-path = "/graphql"
-forward_to = "127.0.0.1:8080/graphql"
