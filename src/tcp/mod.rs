@@ -11,6 +11,7 @@ pub async fn tunnel<S>(mut incoming: S, addr: String, buf: &Vec<u8>) -> Result<(
 where
     S: AsyncRead + AsyncWrite + Unpin + Sized,
 {
+    tracing::info!("Connecting {:?}", &addr);
     match TcpStream::connect(addr).await {
         // Redirect
         Ok(mut oncoming) => {

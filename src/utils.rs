@@ -53,7 +53,7 @@ pub async fn find_path(
         .collect();
     if let Some(matching_path) = paths
         .into_iter()
-        .find(|path| request_path.starts_with(&*path))
+        .find(|path| request_path.starts_with(&path.to_owned()))
     {
         Ok(matching_path)
     } else {

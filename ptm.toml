@@ -1,8 +1,8 @@
 [server]
-listen = "127.0.0.1:40001"
+listen = "127.0.0.1:9999"
 ssl = true
-cert_path = "cert.pem"
-key_path = "key.pem"
+cert_path = "/etc/ptm/cert.pem"
+key_path = "/etc/ptm/key.pem"
 
 [[location]]
 name = "ssh"
@@ -10,11 +10,11 @@ path = "/ssh"
 forward_to = "127.0.0.1:40000"
 
 [[location]]
-name = "web"
-path = "/"
-forward_to = "127.0.0.1:7722"
+name = "api"
+path = "/api"
+forward_to = "127.0.0.1:5000"
 
 [[location]]
-name = "graphql"
-path = "/graphql"
-forward_to = "127.0.0.1:8080/graphql"
+name = "db"
+path = "/db"
+forward_to = "mysql:3306"

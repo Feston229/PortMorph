@@ -1,8 +1,11 @@
 use crate::{config::ConfigInner, tcp::process::process_tcp};
 use anyhow::Result;
 use rustls::ServerConfig;
-use std::sync::Arc;
-use tokio::net::TcpListener;
+use std::{future::Future, sync::Arc};
+use tokio::{
+    net::{TcpListener, TcpStream},
+    task,
+};
 use tokio_rustls::TlsAcceptor;
 
 pub struct PtmListener {
@@ -29,14 +32,19 @@ impl PtmListener {
         tracing::info!("Listening on {} (tls)", listener.local_addr()?);
 
         while let Ok((incoming, _)) = listener.accept().await {
-            if let Ok(incoming) = acceptor.accept(incoming).await {
-                let config_clone = self.config.clone();
+            let config_clone = self.config.clone();
 
-                tokio::spawn(async move {
-                    if let Err(e) = process_tcp(incoming, config_clone).await {
-                        tracing::error!("{e}");
+            if tls_detected(&incoming).await? {
+                match acceptor.accept(incoming).await {
+                    Ok(incoming) => {
+                        spawn_and_log_error(process_tcp(incoming, config_clone));
                     }
-                });
+                    Err(e) => {
+                        tracing::error!("Failed to accept tls stream: {e}");
+                    }
+                }
+            } else {
+                spawn_and_log_error(process_tcp(incoming, config_clone));
             }
         }
 
@@ -50,13 +58,30 @@ impl PtmListener {
         while let Ok((incoming, _)) = listener.accept().await {
             let config_clone = self.config.clone();
 
-            tokio::spawn(async move {
-                if let Err(e) = process_tcp(incoming, config_clone).await {
-                    tracing::error!("{e}");
-                }
-            });
+            spawn_and_log_error(process_tcp(incoming, config_clone));
         }
 
         Ok(())
     }
+}
+
+fn spawn_and_log_error<F>(f: F) -> task::JoinHandle<()>
+where
+    F: Future<Output = Result<()>> + Send + 'static,
+{
+    tokio::spawn(async move {
+        if let Err(e) = f.await {
+            tracing::error!("{e}");
+        }
+    })
+}
+
+async fn tls_detected(stream: &TcpStream) -> Result<bool> {
+    let mut peek_bytes = [0u8; 8];
+    stream.peek(&mut peek_bytes).await?;
+
+    if peek_bytes.starts_with(b"\x16\x03") {
+        return Ok(true);
+    }
+    Ok(false)
 }

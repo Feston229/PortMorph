@@ -1,0 +1,10 @@
+[server]
+listen = "127.0.0.1:9000"
+ssl = true
+cert_path = "cert.pem"
+key_path = "key.pem"
+
+[[location]]
+name = "web"
+path = "/"
+forward_to = "127.0.0.1:8080"

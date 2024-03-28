@@ -12,6 +12,8 @@ pub async fn process_tcp<S>(mut incoming: S, config: Arc<ConfigInner>) -> Result
 where
     S: AsyncRead + AsyncWrite + Unpin + Sized,
 {
+    let ssh_location = get_forward_by_name(&config, "ssh").await?;
+
     let mut buf: Vec<u8> = vec![];
     incoming.read_buf(&mut buf).await?;
 
@@ -19,8 +21,8 @@ where
     let request = String::from_utf8_lossy(&buf).to_string();
     tracing::debug!("Got request -> {}", request);
 
-    if request.contains("SSH") {
-        tunnel(incoming, get_forward_by_name(&config, "ssh").await?, &buf).await
+    if request.contains("SSH") && !ssh_location.is_empty() {
+        tunnel(incoming, ssh_location, &buf).await
     } else if request.contains("HTTP") {
         process_http(incoming, config, request, buf).await
     } else {
