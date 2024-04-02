@@ -1,4 +1,4 @@
-# Port Morph (port_morph)
+# Port Morph
 
 Port Morph is a versatile networking tool designed to facilitate secure and efficient communication across different network protocols. It leverages modern Rust programming practices to ensure high performance and reliability.
 
@@ -34,12 +34,38 @@ Port Morph is a versatile networking tool designed to facilitate secure and effi
 ### Configuration
 
 Port Morph is configured through a TOML file (`ptm.toml`). A default configuration file is provided, but you can specify a custom path by setting an environment variable `PTM_CONFIG_PATH`.
-
 Example `ptm.toml`:
 ```toml
 [server]
 listen = "127.0.0.1:8080"
+```
+
+To enable TLS encryption, specify the `ssl`, `cert_path`, and `key_path` under the `[server]` section in your `ptm.toml`. Ensure your certificate and key files are correctly referenced.
+Example with tls:
+```toml
+[server]
+listen = "127.0.0.1:8080"
 ssl = true
+cert_path = "/etc/ptm/cert.pem"
+key_path = "/etc/ptm/key.pem"
+```
+
+Adding locations
+```toml
+[[location]]
+name = "web"
+path = "/"
+forward_to = "127.0.0.1:3000"
+
+[[location]]
+name = "ssh"
+path = "/ssh"
+forward_to = "127.0.0.1:40000"
+
+[[location]]
+name = "api"
+path = "/api"
+forward_to = "127.0.0.1:5000"
 ```
 
 ### Running
@@ -69,7 +95,7 @@ To simplify the deployment process, you can also use Docker Compose to run Port 
 
 1. Create a `docker-compose.yml` file in the project directory with the following content:
    ```yaml
-   version: '3'
+   version: '3.8'
    services:
      port_morph:
        build: .
@@ -101,5 +127,3 @@ Port Morph is licensed under the GNU General Public License v3.0. For more detai
 
 - Rust Programming Language and its vibrant community.
 - Open-source projects that inspired and contributed to the development of Port Morph.
-
-For more information on how to use Port Morph and its features, please refer to the detailed documentation provided in the project's repository.

@@ -5,6 +5,11 @@ cert_path = "/etc/ptm/cert.pem"
 key_path = "/etc/ptm/key.pem"
 
 [[location]]
+name = "web"
+path = "/"
+forward_to = "127.0.0.1:3000"
+
+[[location]]
 name = "ssh"
 path = "/ssh"
 forward_to = "127.0.0.1:40000"
@@ -13,8 +18,3 @@ forward_to = "127.0.0.1:40000"
 name = "api"
 path = "/api"
 forward_to = "127.0.0.1:5000"
-
-[[location]]
-name = "db"
-path = "/db"
-forward_to = "mysql:3306"
