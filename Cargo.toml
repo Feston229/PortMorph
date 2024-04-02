@@ -18,3 +18,18 @@ tracing-subscriber = "0.3.18"
 
 [features]
 tests = ["axum", "reqwest"]
+
+[package.metadata.deb]
+maintainer = "Alexander Smirnov <londonter@protonmail.com>"
+copyright = "2024, Alexander Smirnov <londonter@protonmail.com>"
+license-file = ["LICENSE", "4"]
+extended-description = """\
+Port Morph is a versatile port forwarding tool designed to simplify \
+the process of managing network traffic for applications."""
+depends = "$auto"
+section = "net"
+priority = "optional"
+assets = [
+    ["target/release/port_morph", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/port_morph/README", "644"],
+]

@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  web:
+    image: feston229/port_morph:latest
+    container_name: web
+    networks:
+      - port_network
+    restart: always
+    volumes:
+      - ./ptm.toml:/etc/ptm/ptm.toml:ro
+      - ./cert.pem:/etc/ptm/cert.pem:ro
+      - ./key.pem:/etc/ptm/key.pem:ro
+    ports:
+      - "9999:9999"
+
+networks:
+  port_network:
+    driver: bridge
