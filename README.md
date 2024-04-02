@@ -7,7 +7,6 @@ Port Morph is a versatile networking tool designed to facilitate secure and effi
 - **Flexible Configuration**: Easily configure the tool using a TOML file, allowing for quick adjustments to network settings and behaviors.
 - **Secure Communication**: Utilizes [rustls](file:///home/gera/Projects/Rust/PortMorph/Cargo.toml#10%2C1-10%2C1) for TLS support, ensuring encrypted and secure data transmission.
 - **Asynchronous Support**: Built on top of [tokio](file:///home/gera/Projects/Rust/PortMorph/Cargo.toml#13%2C1-13%2C1), Port Morph handles network operations asynchronously, improving scalability and responsiveness.
-- **Extensible**: With optional features like [axum](file:///home/gera/Projects/Rust/PortMorph/Cargo.toml#8%2C1-8%2C1) and [reqwest](file:///home/gera/Projects/Rust/PortMorph/Cargo.toml#9%2C1-9%2C1), the tool can be extended to support web server capabilities and HTTP client functionalities.
 
 ## Getting Started
 
@@ -76,15 +75,19 @@ To start Port Morph, simply run the compiled binary:
 ./target/release/port_morph
 ```
 
-To run Port Morph inside a Docker container, follow these steps:
+To deploy Port Morph using Docker, proceed with the following steps, utilizing the pre-built Dockerfile:
 
-1. Build the Docker image:
+1. Build the Docker image using the provided pre_build.dockerfile:
    ```bash
-   docker build -t port_morph .
+   docker build -f dockerfiles/pre_build.dockerfile -t port_morph .
    ```
-2. Run the container:
+2. To run the container, ensure to replace `ptm.toml` with the path to your configuration file:
    ```bash
-   docker run -d -p 8080:8080 --name port_morph_instance port_morph
+   docker run -d -p 8080:8080 --name port_morph_instance -v $(pwd)/ptm.toml:/etc/ptm/ptm.toml port_morph
+   ```
+3. For configurations utilizing SSL, attach your certificate and key file as follows:
+   ```bash
+   docker run -d -p 8080:8080 --name port_morph_instance -v $(pwd)/ptm.toml:/etc/ptm/ptm.toml -v $(pwd)/cert.pem:/etc/ptm/cert.pem -v $(pwd)/key.pem:/etc/ptm/key.pem port_morph
    ```
 
 This will start Port Morph in a detached mode, listening on port 8080 of your host machine.
@@ -95,16 +98,16 @@ To simplify the deployment process, you can also use Docker Compose to run Port 
 
 1. Create a `docker-compose.yml` file in the project directory with the following content:
    ```yaml
-   version: '3.8'
+   version: "3.8"
    services:
-     port_morph:
-       build: .
+     web:
+       image: feston229/port_morph:latest
        ports:
          - "8080:8080"
        volumes:
-         - .:/app
-       environment:
-         - PTM_CONFIG_PATH=/app/ptm.toml
+         - ./ptm.toml:/etc/ptm/ptm.toml:ro # Config path
+         - ./cert.pem:/etc/ptm/cert.pem:ro # cert in ssl setup
+         - ./key.pem:/etc/ptm/key.pem:ro # key in ssl setup
    ```
 
 2. Start the service using Docker Compose:
