@@ -19,7 +19,7 @@ Port Morph is a versatile networking tool designed to facilitate secure and effi
 
 1. Clone the repository:
    ```bash
-   git clone https://example.com/port_morph.git
+   git clone https://github.com/Feston229/PortMorph.git
    ```
 2. Navigate to the project directory:
    ```bash
@@ -99,6 +99,7 @@ To simplify the deployment process, you can also use Docker Compose to run Port 
 1. Create a `docker-compose.yml` file in the project directory with the following content:
    ```yaml
    version: "3.8"
+
    services:
      web:
        image: feston229/port_morph:latest
