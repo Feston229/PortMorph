@@ -59,7 +59,7 @@ where
         .ok_or(anyhow!("Missing path"))?;
 
     // Find the internal path based on the request path and method.
-    let path = find_path(&config, request_path, method).await?;
+    let path = find_path(&config, &request_path, method).await?;
     // Determine the forwarding address and modify the request if necessary.
     if path != "/" {
         addr = get_forward_by_path(&config, &path).await?;
