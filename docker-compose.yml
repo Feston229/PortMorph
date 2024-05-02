@@ -2,11 +2,12 @@ version: "3.8"
 
 services:
   web:
-    image: feston229/port_morph:latest
+    # image: feston229/port_morph:latest
+    build: .
     container_name: web
     networks:
       - port_network
-    restart: always
+    #restart: always
     volumes:
       - ./ptm.toml:/etc/ptm/ptm.toml:ro
       - ./cert.pem:/etc/ptm/cert.pem:ro

@@ -46,11 +46,10 @@ pub async fn find_path(
         .location
         .clone()
         .into_iter()
-        .filter(|loc| {
-            loc.path != "/" && loc.method == Some(method.to_owned()) || loc.method == None
-        })
+        .filter(|loc| loc.path != "/")
         .map(|loc| loc.path)
         .collect();
+    tracing::info!("paths -> {:?}", paths);
     if let Some(matching_path) = paths
         .into_iter()
         .find(|path| request_path.starts_with(&path.to_owned()))
